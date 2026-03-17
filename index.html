@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Status Report Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark">SR</div>
+        <span class="logo-text">StatusReport</span>
+      </div>
+      <nav>
+        <a href="#" class="nav-item active" data-page="upload">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
+          Upload
+        </a>
+        <a href="#" class="nav-item" data-page="files">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+          Transcrições
+        </a>
+        <a href="#" class="nav-item" data-page="generate">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+          Gerar Relatório
+        </a>
+        <a href="#" class="nav-item" data-page="settings">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Configurações
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="project-badges" id="sidebarBadges"></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- UPLOAD PAGE -->
+      <div id="page-upload" class="page active">
+        <div class="page-header">
+          <h1>Upload de transcrição</h1>
+          <p>Faça o upload do PDF gerado pelo Tactique após cada reunião</p>
+        </div>
+        <div class="upload-card">
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".pdf,.txt" multiple>
+            <div class="drop-icon">
+              <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
+            </div>
+            <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
+            <div class="drop-sub">Suporta PDF e TXT · Múltiplos arquivos de uma vez</div>
+          </div>
+
+          <div id="uploadMeta" style="display:none">
+            <div class="meta-row">
+              <div class="field-group">
+                <label>Projeto</label>
+                <select id="uploadProject">
+                  <option value="">Selecionar projeto...</option>
+                  <option value="SIGSUAS">SIGSUAS — Assistência Social</option>
+                  <option value="SIGP">SIGP — Folha de Pagamento / E-Social</option>
+                  <option value="Iplanrio">Gestão Cultural — Iplanrio</option>
+                  <option value="Procuradoria Fiscal">Procuradoria Fiscal Automatizada</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Data da reunião</label>
+                <input type="date" id="uploadDate">
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Assunto / contexto (opcional)</label>
+              <input type="text" id="uploadContext" placeholder="Ex: Reunião de levantamento de requisitos com cliente">
+            </div>
+            <div id="fileList" class="file-list"></div>
+            <button class="btn-primary" id="uploadBtn" onclick="uploadFiles()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
+              Fazer upload
+            </button>
+          </div>
+        </div>
+        <div id="uploadFeedback"></div>
+      </div>
+
+      <!-- FILES PAGE -->
+      <div id="page-files" class="page">
+        <div class="page-header">
+          <h1>Transcrições armazenadas</h1>
+          <p>Todos os arquivos enviados, organizados por projeto</p>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all" onclick="filterFiles('all', this)">Todos</button>
+          <button class="filter-btn" data-filter="SIGSUAS" onclick="filterFiles('SIGSUAS', this)">SIGSUAS</button>
+          <button class="filter-btn" data-filter="SIGP" onclick="filterFiles('SIGP', this)">SIGP</button>
+          <button class="filter-btn" data-filter="Iplanrio" onclick="filterFiles('Iplanrio', this)">Iplanrio</button>
+          <button class="filter-btn" data-filter="Procuradoria Fiscal" onclick="filterFiles('Procuradoria Fiscal', this)">Procuradoria</button>
+        </div>
+        <div id="fileGrid" class="file-grid">
+          <div class="empty-state">
+            <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+            <p>Nenhuma transcrição ainda</p>
+            <span>Faça o upload de PDFs do Tactique para começar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GENERATE PAGE -->
+      <div id="page-generate" class="page">
+        <div class="page-header">
+          <h1>Gerar status reports</h1>
+          <p>A IA analisa todas as transcrições da semana e gera os relatórios por projeto</p>
+        </div>
+
+        <div class="gen-config card">
+          <div class="meta-row">
+            <div class="field-group">
+              <label>Período</label>
+              <div class="date-pair">
+                <input type="date" id="genDateStart">
+                <span>até</span>
+                <input type="date" id="genDateEnd">
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Projetos</label>
+              <div class="check-group">
+                <label class="check-label"><input type="checkbox" value="SIGSUAS" checked> SIGSUAS</label>
+                <label class="check-label"><input type="checkbox" value="SIGP" checked> SIGP</label>
+                <label class="check-label"><input type="checkbox" value="Iplanrio" checked> Iplanrio</label>
+                <label class="check-label"><input type="checkbox" value="Procuradoria Fiscal" checked> Procuradoria</label>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="generateReports()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Analisar transcrições e gerar relatórios
+          </button>
+        </div>
+
+        <div id="genLoading" style="display:none" class="gen-loading">
+          <div class="spinner"></div>
+          <div class="loading-txt" id="genLoadingTxt">Lendo transcrições...</div>
+        </div>
+
+        <div id="genResults"></div>
+      </div>
+
+      <!-- SETTINGS PAGE -->
+      <div id="page-settings" class="page">
+        <div class="page-header">
+          <h1>Configurações</h1>
+          <p>Configure suas credenciais de API</p>
+        </div>
+        <div class="card settings-card">
+          <div class="field-group">
+            <label>Chave da API Anthropic (Claude)</label>
+            <input type="password" id="anthropicKey" placeholder="sk-ant-...">
+            <span class="field-hint">Obtenha em <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></span>
+          </div>
+          <div class="field-group">
+            <label>URL do projeto Supabase</label>
+            <input type="text" id="supabaseUrl" placeholder="https://xxxx.supabase.co">
+          </div>
+          <div class="field-group">
+            <label>Chave anon do Supabase</label>
+            <input type="password" id="supabaseKey" placeholder="eyJ...">
+            <span class="field-hint">Obtenha em <a href="https://supabase.com/dashboard" target="_blank">supabase.com/dashboard</a> → Settings → API</span>
+          </div>
+          <button class="btn-primary" onclick="saveSettings()">Salvar configurações</button>
+          <div id="settingsFeedback"></div>
+        </div>
+        <div class="card settings-card" style="margin-top:1rem">
+          <div class="settings-section-title">Como configurar o Supabase</div>
+          <ol class="setup-steps">
+            <li>Crie uma conta grátis em <a href="https://supabase.com" target="_blank">supabase.com</a></li>
+            <li>Crie um novo projeto</li>
+            <li>Vá em <strong>SQL Editor</strong> e execute o script abaixo:</li>
+          </ol>
+          <pre class="code-block">CREATE TABLE transcriptions (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  project text NOT NULL,
+  meeting_date date NOT NULL,
+  context text,
+  filename text NOT NULL,
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE transcriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow all" ON transcriptions FOR ALL USING (true);</pre>
+          <li style="margin-top:8px;font-size:13px;color:#666">Copie a URL e a chave anon em Settings → API</li>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
