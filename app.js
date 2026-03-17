@@ -176,26 +176,17 @@ async function readFileContent(file) {
       r.readAsText(file);
     });
   }
-  // PDF: extract text via Claude API
+  // PDF: extract text via serverless function
   const base64 = await fileToBase64(file);
   const apiKey = localStorage.getItem('anthropicKey');
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('/api/extract', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-          { type: 'text', text: 'Extraia todo o texto desta transcrição de reunião. Retorne apenas o texto puro, sem formatação adicional.' }
-        ]
-      }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, apiKey })
   });
   const data = await resp.json();
-  return data.content?.map(i => i.text || '').join('') || '';
+  if (data.error) throw new Error(data.error);
+  return data.text || '';
 }
 
 function fileToBase64(file) {
@@ -400,22 +391,14 @@ Próximos Passos:
 [liste com traço -]`;
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/claude', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, apiKey })
     });
-
     const data = await resp.json();
-    const text = data.content?.map(i => i.text || '').join('') || '';
+    if (data.error) throw new Error(data.error);
+    const text = data.text || '';
     const parts = text.split('===EMAIL===');
     return {
       wa: (parts[0] || '').replace('===WHATSAPP===', '').trim(),
