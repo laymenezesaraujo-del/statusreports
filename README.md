@@ -1,4 +1,4 @@
-# Status Report Generator
+ # Status Report Generator
 
 Sistema web para geração automática de status reports a partir de transcrições de reuniões.
 
