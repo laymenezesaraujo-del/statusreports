@@ -44,10 +44,25 @@ function saveSettings() {
 }
 
 function initSupabase() {
-  const url = localStorage.getItem('supabaseUrl');
+  let url = localStorage.getItem('supabaseUrl');
   const key = localStorage.getItem('supabaseKey');
   if (url && key) {
     try {
+      // Support new sb_publishable_ key format — extract project ref and build URL
+      if (key.startsWith('sb_publishable_') || key.startsWith('sb_secret_')) {
+        // Extract project ref from the supabase key or URL
+        if (!url || url === 'https://xxxx.supabase.co') {
+          // Try to get URL from stored value
+          url = localStorage.getItem('supabaseUrl');
+        }
+      }
+      // Ensure URL has correct format
+      if (url && !url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      if (url && !url.includes('supabase.co') && !url.includes('supabase.')) {
+        url = url + '.supabase.co';
+      }
       supabaseClient = supabase.createClient(url, key);
     } catch(e) {
       console.error('Supabase init error:', e);
